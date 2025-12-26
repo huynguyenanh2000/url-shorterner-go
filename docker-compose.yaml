@@ -1,0 +1,40 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: mysql-db
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: url_shorterner
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: adminpassword
+    volumes:
+      - db-data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+
+  redis:
+    image: redis:6.2-alpine
+    restart: unless-stopped
+    container_name: redis
+    ports:
+      - "6379:6379"
+    command: redis-server --save 60 1 --loglevel warning
+
+  redis-commander:
+    container_name: redis-commander
+    hostname: redis-commander
+    image: rediscommander/redis-commander:latest
+    environment:
+      - REDIS_HOST=redis
+    ports:
+      - "127.0.0.1:8081:8081"
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+volumes:
+  db-data:
+
+networks:
+  backend:
+    driver: bridge

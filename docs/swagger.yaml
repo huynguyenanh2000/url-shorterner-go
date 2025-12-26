@@ -1,0 +1,73 @@
+basePath: /v1
+definitions:
+  main.ShorternURLPayload:
+    properties:
+      long_url:
+        type: string
+    required:
+    - long_url
+    type: object
+  store.URL:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      long_url:
+        type: string
+      short_url:
+        type: string
+      updated_at:
+        type: string
+    type: object
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: API for URL Shorterner Service.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: URL Shorterner API
+paths:
+  /urls/shorten:
+    post:
+      consumes:
+      - application/json
+      description: Shortern an URL
+      parameters:
+      - description: URL payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/main.ShorternURLPayload'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/store.URL'
+        "400":
+          description: Bad Request
+          schema: {}
+        "401":
+          description: Unauthorized
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Shortern an URL
+      tags:
+      - urls
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
