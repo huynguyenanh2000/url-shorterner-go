@@ -83,6 +83,9 @@ func main() {
 	}
 
 	snowflakeIDGenerator, err := idgen.NewSnowflakeClient(int64(cfg.machineID))
+	if err != nil {
+		logger.Fatal(err)
+	}
 	store := store.NewStorage(db)
 	cacheStorage := cache.NewRedisStorage(rdb)
 

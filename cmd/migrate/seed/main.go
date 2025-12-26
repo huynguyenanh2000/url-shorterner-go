@@ -23,6 +23,9 @@ func main() {
 	machineID := env.GetInt("MACHINE_ID", 1)
 
 	snowflakeIDGenerator, err := idgen.NewSnowflakeClient(int64(machineID))
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	db.SeedURLs(store, conn, snowflakeIDGenerator)
 }
