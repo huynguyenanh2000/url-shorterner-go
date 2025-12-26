@@ -71,6 +71,10 @@ func (app *application) mount() *chi.Mux {
 
 		r.Route("/urls", func(r chi.Router) {
 			r.Post("/shorten", app.urlShortenHandler)
+			r.Route("/{shortURL}", func(r chi.Router) {
+				r.Use(app.urlContextMiddleware)
+				r.Get("/", app.urlRedirectHandler)
+			})
 		})
 	})
 

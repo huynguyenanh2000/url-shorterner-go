@@ -16,6 +16,7 @@ type Storage struct {
 	URL interface {
 		Create(context.Context, *URL) error
 		GetByLongURL(context.Context, string) (*URL, error)
+		GetByShortURL(context.Context, string) (*URL, error)
 	}
 }
 

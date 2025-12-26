@@ -11,6 +11,17 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+func resetMocks(app *application) {
+	if mockStore, ok := app.store.URL.(*store.MockURLStore); ok {
+		mockStore.ExpectedCalls = nil
+		mockStore.Calls = nil
+	}
+	if mockCache, ok := app.cacheStorage.URL.(*cache.MockURLStore); ok {
+		mockCache.ExpectedCalls = nil
+		mockCache.Calls = nil
+	}
+}
+
 func TestShorternURL(t *testing.T) {
 	withRedis := config{
 		redisCfg: redisConfig{
@@ -25,19 +36,8 @@ func TestShorternURL(t *testing.T) {
 	payload := ShorternURLPayload{LongURL: longURL}
 	body, _ := json.Marshal(payload)
 
-	resetMocks := func() {
-		mockStore := app.store.URL.(*store.MockURLStore)
-		mockCacheStore := app.cacheStorage.URL.(*cache.MockURLStore)
-
-		mockStore.ExpectedCalls = nil
-		mockStore.Calls = nil
-
-		mockCacheStore.ExpectedCalls = nil
-		mockCacheStore.Calls = nil
-	}
-
 	t.Run("should return 200 if URL exists in cache (Cache Hit)", func(t *testing.T) {
-		resetMocks()
+		resetMocks(app)
 		mockCacheStore := app.cacheStorage.URL.(*cache.MockURLStore)
 
 		existingURL := &store.URL{
@@ -56,7 +56,7 @@ func TestShorternURL(t *testing.T) {
 	})
 
 	t.Run("should return 200 and set cache if cache miss but DB exists", func(t *testing.T) {
-		resetMocks()
+		resetMocks(app)
 		mockStore := app.store.URL.(*store.MockURLStore)
 		mockCacheStore := app.cacheStorage.URL.(*cache.MockURLStore)
 
@@ -81,7 +81,7 @@ func TestShorternURL(t *testing.T) {
 	})
 
 	t.Run("should return 201 and set cache if URL is completely new", func(t *testing.T) {
-		resetMocks()
+		resetMocks(app)
 		mockStore := app.store.URL.(*store.MockURLStore)
 		mockCacheStore := app.cacheStorage.URL.(*cache.MockURLStore)
 
@@ -106,7 +106,7 @@ func TestShorternURL(t *testing.T) {
 	})
 
 	t.Run("should return 400 if payload is not a valid URL (e.g., 'aaa')", func(t *testing.T) {
-		resetMocks()
+		resetMocks(app)
 		mockCacheStore := app.cacheStorage.URL.(*cache.MockURLStore)
 		mockStore := app.store.URL.(*store.MockURLStore)
 		mockCacheStore.ExpectedCalls = nil
@@ -126,5 +126,76 @@ func TestShorternURL(t *testing.T) {
 
 		mockCacheStore.AssertExpectations(t)
 		mockStore.AssertExpectations(t)
+	})
+}
+
+func TestURLRedirect(t *testing.T) {
+	app := newTestApplication(t, config{redisCfg: redisConfig{enable: true}})
+	mux := app.mount()
+
+	shortCode := "abcxyz"
+	longURL := "https://google.com"
+	testURL := &store.URL{
+		ShortURL: shortCode,
+		LongURL:  longURL,
+	}
+
+	t.Run("should redirect (308) when URL exists in cache", func(t *testing.T) {
+		resetMocks(app)
+		mockCacheStore := app.cacheStorage.URL.(*cache.MockURLStore)
+
+		// Setup: Cache Hit
+		mockCacheStore.On("GetByShortURL", mock.Anything, shortCode).Return(testURL, nil).Once()
+
+		req, _ := http.NewRequest(http.MethodGet, "/v1/urls/"+shortCode, nil)
+		rr := executeRequest(req, mux)
+
+		checkResponseCode(t, http.StatusPermanentRedirect, rr.Code)
+
+		if rr.Header().Get("Location") != longURL {
+			t.Errorf("expected location %s, got %s", longURL, rr.Header().Get("Location"))
+		}
+
+		mockCacheStore.AssertExpectations(t)
+	})
+
+	t.Run("should redirect (308) when cache miss but exists in DB", func(t *testing.T) {
+		resetMocks(app)
+		mockStore := app.store.URL.(*store.MockURLStore)
+		mockCacheStore := app.cacheStorage.URL.(*cache.MockURLStore)
+
+		// Setup: Cache Miss -> DB Hit -> Set Cache
+		mockCacheStore.On("GetByShortURL", mock.Anything, shortCode).Return(nil, nil).Once()
+		mockStore.On("GetByShortURL", mock.Anything, shortCode).Return(testURL, nil).Once()
+		mockCacheStore.On("Set", mock.Anything, testURL).Return(nil).Once()
+
+		req, _ := http.NewRequest(http.MethodGet, "/v1/urls/"+shortCode, nil)
+		rr := executeRequest(req, mux)
+
+		checkResponseCode(t, http.StatusPermanentRedirect, rr.Code)
+		if rr.Header().Get("Location") != longURL {
+			t.Errorf("expected location %s, got %s", longURL, rr.Header().Get("Location"))
+		}
+
+		mockCacheStore.AssertExpectations(t)
+		mockStore.AssertExpectations(t)
+	})
+
+	t.Run("should return 404 if URL does not exist anywhere", func(t *testing.T) {
+		resetMocks(app)
+		mockStore := app.store.URL.(*store.MockURLStore)
+		mockCacheStore := app.cacheStorage.URL.(*cache.MockURLStore)
+
+		// Setup: Cache Miss -> DB Miss (ErrNotFound)
+		mockCacheStore.On("GetByShortURL", mock.Anything, "nonexistent").Return(nil, nil).Once()
+		mockStore.On("GetByShortURL", mock.Anything, "nonexistent").Return(nil, store.ErrNotFound).Once()
+
+		req, _ := http.NewRequest(http.MethodGet, "/v1/urls/nonexistent", nil)
+		rr := executeRequest(req, mux)
+
+		checkResponseCode(t, http.StatusNotFound, rr.Code)
+
+		mockStore.AssertExpectations(t)
+		mockCacheStore.AssertExpectations(t)
 	})
 }

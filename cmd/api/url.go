@@ -1,11 +1,18 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/huynguyenanh2000/url-shorterner/internal/pkg/base62"
 	"github.com/huynguyenanh2000/url-shorterner/internal/store"
 )
+
+type urlKey string
+
+const urlCtx urlKey = "url"
 
 type ShorternURLPayload struct {
 	LongURL string `json:"long_url" validate:"required,http_url"`
@@ -102,4 +109,49 @@ func (app *application) urlShortenHandler(w http.ResponseWriter, r *http.Request
 		app.internalServerError(w, r, err)
 		return
 	}
+}
+
+func (app *application) urlRedirectHandler(w http.ResponseWriter, r *http.Request) {
+	url := getURLFromCtx(r)
+
+	http.Redirect(w, r, url.LongURL, http.StatusPermanentRedirect)
+}
+
+func (app *application) urlContextMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		shortURL := chi.URLParam(r, "shortURL")
+		ctx := r.Context()
+
+		url, err := app.cacheStorage.URL.GetByShortURL(ctx, shortURL)
+		if err != nil {
+			app.internalServerError(w, r, err)
+			return
+		}
+
+		if url == nil {
+			url, err = app.store.URL.GetByShortURL(ctx, shortURL)
+			if err != nil {
+				switch {
+				case errors.Is(err, store.ErrNotFound):
+					app.notFoundResponse(w, r, err)
+				default:
+					app.internalServerError(w, r, err)
+				}
+				return
+			}
+
+			if err := app.cacheStorage.URL.Set(ctx, url); err != nil {
+				app.internalServerError(w, r, err)
+				return
+			}
+		}
+
+		ctx = context.WithValue(ctx, urlCtx, url)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func getURLFromCtx(r *http.Request) *store.URL {
+	url, _ := r.Context().Value(urlCtx).(*store.URL)
+	return url
 }

@@ -93,3 +93,36 @@ func (s *URLStore) GetByLongURL(ctx context.Context, longURL string) (*URL, erro
 
 	return url, nil
 }
+
+func (s *URLStore) GetByShortURL(ctx context.Context, shortURL string) (*URL, error) {
+	query := `
+		SELECT id, short_url, long_url, created_at, updated_at
+		FROM url
+		WHERE short_url = ?
+		LIMIT 1
+	`
+
+	url := &URL{}
+
+	err := s.db.QueryRowContext(
+		ctx,
+		query,
+		shortURL,
+	).Scan(
+		&url.ID,
+		&url.ShortURL,
+		&url.LongURL,
+		&url.CreatedAt,
+		&url.UpdatedAt,
+	)
+	if err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			return nil, ErrNotFound
+		default:
+			return nil, err
+		}
+	}
+
+	return url, nil
+}

@@ -28,3 +28,11 @@ func (s *MockURLStore) GetByLongURL(ctx context.Context, longURL string) (*URL, 
 	}
 	return args.Get(0).(*URL), args.Error(1)
 }
+
+func (s *MockURLStore) GetByShortURL(ctx context.Context, shortURL string) (*URL, error) {
+	args := s.Called(ctx, shortURL)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*URL), args.Error(1)
+}
