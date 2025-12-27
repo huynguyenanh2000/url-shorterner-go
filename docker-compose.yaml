@@ -9,10 +9,16 @@ services:
     environment:
       - ADDR=:8080
       - EXTERNAL_ADDR=url-shorterner-api:8080
-      - DB_ADDR=admin:adminpassword@tcp(mysql-db:3306)/url_shorterner?parseTime=true
-      - REDIS_ADDR=redis:6379
-      - REDIS_ENABLE=true
       - MACHINE_ID=1
+      - DB_ADDR=${DB_USER}:${DB_PASSWORD}@tcp(mysql-db:3306)/${DB_NAME}?parseTime=true
+      - DB_MAX_OPEN_CONNS=${DB_MAX_OPEN_CONNS}
+      - DB_MAX_IDLE_CONNS=${DB_MAX_IDLE_CONNS}
+      - DB_MAX_IDLE_TIME=${DB_MAX_IDLE_TIME}
+      - REDIS_ADDR=redis:6379
+      - REDIS_PW=${REDIS_PW}
+      - REDIS_DB=${REDIS_DB}
+      - REDIS_ENABLE=true
+      - ENV=${ENV}
 
     depends_on:
       - db
@@ -24,16 +30,46 @@ services:
     image: mysql:8.0
     container_name: mysql-db
     environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: url_shorterner
-      MYSQL_USER: admin
-      MYSQL_PASSWORD: adminpassword
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
     volumes:
       - db-data:/var/lib/mysql
     ports:
       - "3306:3306"
     networks:
       - backend
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u${DB_USER}",
+          "-p${DB_PASSWORD}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  migrate:
+    image: migrate/migrate
+    volumes:
+      - ./cmd/migrate/migrations:/migrations
+    networks:
+      - backend
+    entrypoint: sh -c
+    command: >
+      "sleep 10 &&
+      migrate -path=/migrations/
+      -database 'mysql://${DB_USER}:${DB_PASSWORD}@tcp(mysql-db:3306)/${DB_NAME}?multiStatements=true'
+      up"
+    depends_on:
+      db:
+        condition: service_healthy
 
   redis:
     image: redis:6.2-alpine
@@ -41,7 +77,7 @@ services:
     container_name: redis
     ports:
       - "6379:6379"
-    command: redis-server --save 60 1 --loglevel warning
+    command: redis-server --save 60 1 --loglevel warning --requirepass ${REDIS_PW}
     networks:
       - backend
 
@@ -51,11 +87,15 @@ services:
     image: rediscommander/redis-commander:latest
     environment:
       - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PW}
     ports:
       - "127.0.0.1:8081:8081"
     depends_on:
       - redis
     restart: unless-stopped
+    networks:
+      - backend
 
 volumes:
   db-data:

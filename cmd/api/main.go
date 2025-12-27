@@ -51,7 +51,7 @@ func main() {
 			addr:   env.GetString("REDIS_ADDR", "localhost:6379"),
 			pw:     env.GetString("REDIS_PW", ""),
 			db:     env.GetInt("REDIS_DB", 0),
-			enable: env.GetBool("REDIS_ENABLE", false),
+			enable: env.GetBool("REDIS_ENABLE", true),
 		},
 		env: env.GetString("ENV", "development"),
 	}
