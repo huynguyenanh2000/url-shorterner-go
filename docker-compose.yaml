@@ -1,4 +1,25 @@
 services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: url-shortener-api
+    ports:
+      - "8080:8080"
+    environment:
+      - ADDR=:8080
+      - EXTERNAL_ADDR=url-shorterner-api:8080
+      - DB_ADDR=admin:adminpassword@tcp(mysql-db:3306)/url_shorterner?parseTime=true
+      - REDIS_ADDR=redis:6379
+      - REDIS_ENABLE=true
+      - MACHINE_ID=1
+
+    depends_on:
+      - db
+      - redis
+    networks:
+      - backend
+
   db:
     image: mysql:8.0
     container_name: mysql-db
@@ -11,6 +32,8 @@ services:
       - db-data:/var/lib/mysql
     ports:
       - "3306:3306"
+    networks:
+      - backend
 
   redis:
     image: redis:6.2-alpine
@@ -19,6 +42,8 @@ services:
     ports:
       - "6379:6379"
     command: redis-server --save 60 1 --loglevel warning
+    networks:
+      - backend
 
   redis-commander:
     container_name: redis-commander

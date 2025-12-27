@@ -12,7 +12,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 	"github.com/huynguyenanh2000/url-shorterner/docs"
+	"github.com/huynguyenanh2000/url-shorterner/internal/env"
 	"github.com/huynguyenanh2000/url-shorterner/internal/idgen"
 	"github.com/huynguyenanh2000/url-shorterner/internal/store"
 	"github.com/huynguyenanh2000/url-shorterner/internal/store/cache"
@@ -56,9 +58,17 @@ func (app *application) mount() *chi.Mux {
 
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
+
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
-
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{env.GetString("CORS_ALLOWED_ORIGIN", "http://localhost:5174")},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link", "Location"},
+		AllowCredentials: false,
+		MaxAge:           300, // Maximum value not ignored by any of major browsers
+	}))
 	r.Use(middleware.Timeout(60 * time.Second))
 
 	r.Route("/v1", func(r chi.Router) {

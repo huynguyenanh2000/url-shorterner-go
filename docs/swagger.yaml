@@ -32,6 +32,34 @@ info:
   termsOfService: http://swagger.io/terms/
   title: URL Shorterner API
 paths:
+  /urls/{shortURL}:
+    get:
+      consumes:
+      - application/json
+      description: Redirect to the original long URL based on the short url provided
+        in the path
+      parameters:
+      - description: Short URL
+        in: path
+        name: shortURL
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "308":
+          description: Permanent Redirect
+          schema:
+            type: string
+        "404":
+          description: URL not found
+          schema: {}
+        "500":
+          description: Internal server error
+          schema: {}
+      summary: Redirect to long URL
+      tags:
+      - urls
   /urls/shorten:
     post:
       consumes:
@@ -65,6 +93,9 @@ paths:
       summary: Shortern an URL
       tags:
       - urls
+schemes:
+- http
+- https
 securityDefinitions:
   ApiKeyAuth:
     in: header

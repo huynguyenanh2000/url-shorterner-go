@@ -25,7 +25,7 @@ const version = "0.0.1"
 //	@license.url	http://www.apache.org/licenses/LICENSE-2.0.html
 
 // @BasePath					/v1
-//
+// @schemes					http https
 // @securityDefinitions.apiKey	ApiKeyAuth
 // @in							header
 // @name						Authorization
@@ -35,10 +35,7 @@ func main() {
 	logger := zap.Must(zap.NewProduction()).Sugar()
 	defer logger.Sync()
 
-	err := godotenv.Load()
-	if err != nil {
-		logger.Fatal(err)
-	}
+	_ = godotenv.Load()
 
 	cfg := config{
 		addr:      env.GetString("ADDR", ":8080"),

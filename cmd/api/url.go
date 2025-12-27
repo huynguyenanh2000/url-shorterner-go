@@ -111,6 +111,23 @@ func (app *application) urlShortenHandler(w http.ResponseWriter, r *http.Request
 	}
 }
 
+// Redirect URL godoc
+//
+//	@Summary		Redirect to long URL
+//	@Description	Redirect to the original long URL based on the short url provided in the path
+//	@Tags			urls
+//
+//	@Accept			json
+//	@Produce		json
+//
+//	@Param			shortURL	path		string	true	"Short URL"
+//	@Success		308			{string}	string	"Permanent Redirect"
+//	@Failure		404			{object}	error	"URL not found"
+//	@Failure		500			{object}	error	"Internal server error"
+//
+// Security ApiKeyAuth
+//
+//	@Router			/urls/{shortURL} [get]
 func (app *application) urlRedirectHandler(w http.ResponseWriter, r *http.Request) {
 	url := getURLFromCtx(r)
 

@@ -1,4 +1,8 @@
 {
+    "schemes": [
+        "http",
+        "https"
+    ],
     "swagger": "2.0",
     "info": {
         "description": "API for URL Shorterner Service.",
@@ -62,6 +66,46 @@
                     },
                     "500": {
                         "description": "Internal Server Error",
+                        "schema": {}
+                    }
+                }
+            }
+        },
+        "/urls/{shortURL}": {
+            "get": {
+                "description": "Redirect to the original long URL based on the short url provided in the path",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "urls"
+                ],
+                "summary": "Redirect to long URL",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Short URL",
+                        "name": "shortURL",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "308": {
+                        "description": "Permanent Redirect",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "URL not found",
+                        "schema": {}
+                    },
+                    "500": {
+                        "description": "Internal server error",
                         "schema": {}
                     }
                 }

@@ -6,6 +6,7 @@ require github.com/go-chi/chi/v5 v5.2.3
 
 require (
 	github.com/bwmarrin/snowflake v0.3.0
+	github.com/go-chi/cors v1.2.2
 	github.com/go-playground/validator/v10 v10.30.1
 	github.com/go-sql-driver/mysql v1.9.3
 	github.com/joho/godotenv v1.5.1

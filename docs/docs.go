@@ -74,6 +74,46 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/urls/{shortURL}": {
+            "get": {
+                "description": "Redirect to the original long URL based on the short url provided in the path",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "urls"
+                ],
+                "summary": "Redirect to long URL",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Short URL",
+                        "name": "shortURL",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "308": {
+                        "description": "Permanent Redirect",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "URL not found",
+                        "schema": {}
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {}
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -123,7 +163,7 @@ var SwaggerInfo = &swag.Spec{
 	Version:          "",
 	Host:             "",
 	BasePath:         "/v1",
-	Schemes:          []string{},
+	Schemes:          []string{"http", "https"},
 	Title:            "URL Shorterner API",
 	Description:      "API for URL Shorterner Service.",
 	InfoInstanceName: "swagger",
