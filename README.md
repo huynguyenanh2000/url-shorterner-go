@@ -26,7 +26,8 @@ REDIS_PW=
 REDIS_DB=
 
 # Environment Settings
-ENV= ```
+ENV= 
+```
 
 ## 🚀 Execution & Deployment
 
@@ -36,6 +37,7 @@ Once your `.env` file is configured, use **Docker Compose** to pull the necessar
 ```bash
 # Build and start all containers in detached mode
 docker compose up -d
+```
 
 ### 3. Finalize API Setup
 
@@ -43,3 +45,4 @@ To ensure the application correctly initializes its connection pools and applies
 
 ```bash
 docker restart url-shortener-api
+```
