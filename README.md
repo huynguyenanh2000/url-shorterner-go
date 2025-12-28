@@ -26,7 +26,7 @@ REDIS_PW=
 REDIS_DB=
 
 # Environment Settings
-ENV=
+ENV= ```
 
 ## 🚀 Execution & Deployment
 

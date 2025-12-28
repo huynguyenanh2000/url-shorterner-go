@@ -90,7 +90,7 @@ func TestURLGetStats(t *testing.T) {
 		// Middleware: Cache miss
 		mockCache.On("GetByShortURL", mock.Anything, "missing").Return(nil, nil).Once()
 
-		// Middleware: Database miss - returns store.ErrNotFound
+		// Middleware: Database miss - returns store.ErrNotFoundr
 		mockURLStore.On("GetByShortURL", mock.Anything, "missing").Return(nil, store.ErrNotFound).Once()
 
 		req, _ := http.NewRequest(http.MethodGet, "/v1/urls/missing/stats", nil)
