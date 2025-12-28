@@ -1,30 +1,30 @@
 services:
-  # api:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile
-  #   container_name: url-shortener-api
-  #   ports:
-  #     - "8080:8080"
-  #   environment:
-  #     - ADDR=:8080
-  #     - EXTERNAL_ADDR=url-shorterner-api:8080
-  #     - MACHINE_ID=1
-  #     - DB_ADDR=${DB_USER}:${DB_PASSWORD}@tcp(mysql-db:3306)/${DB_NAME}?parseTime=true
-  #     - DB_MAX_OPEN_CONNS=${DB_MAX_OPEN_CONNS}
-  #     - DB_MAX_IDLE_CONNS=${DB_MAX_IDLE_CONNS}
-  #     - DB_MAX_IDLE_TIME=${DB_MAX_IDLE_TIME}
-  #     - REDIS_ADDR=redis:6379
-  #     - REDIS_PW=${REDIS_PW}
-  #     - REDIS_DB=${REDIS_DB}
-  #     - REDIS_ENABLE=true
-  #     - ENV=${ENV}
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: url-shortener-api
+    ports:
+      - "8080:8080"
+    environment:
+      - ADDR=:8080
+      - EXTERNAL_ADDR=url-shorterner-api:8080
+      - MACHINE_ID=1
+      - DB_ADDR=${DB_USER}:${DB_PASSWORD}@tcp(mysql-db:3306)/${DB_NAME}?parseTime=true
+      - DB_MAX_OPEN_CONNS=${DB_MAX_OPEN_CONNS}
+      - DB_MAX_IDLE_CONNS=${DB_MAX_IDLE_CONNS}
+      - DB_MAX_IDLE_TIME=${DB_MAX_IDLE_TIME}
+      - REDIS_ADDR=redis:6379
+      - REDIS_PW=${REDIS_PW}
+      - REDIS_DB=${REDIS_DB}
+      - REDIS_ENABLE=true
+      - ENV=${ENV}
 
-  #   depends_on:
-  #     - db
-  #     - redis
-  #   networks:
-  #     - backend
+    depends_on:
+      - db
+      - redis
+    networks:
+      - backend
 
   db:
     image: mysql:8.0
@@ -55,21 +55,21 @@ services:
       timeout: 5s
       retries: 10
 
-  # migrate:
-  #   image: migrate/migrate
-  #   volumes:
-  #     - ./cmd/migrate/migrations:/migrations
-  #   networks:
-  #     - backend
-  #   entrypoint: sh -c
-  #   command: >
-  #     "sleep 10 &&
-  #     migrate -path=/migrations/
-  #     -database 'mysql://${DB_USER}:${DB_PASSWORD}@tcp(mysql-db:3306)/${DB_NAME}?multiStatements=true'
-  #     up"
-  #   depends_on:
-  #     db:
-  #       condition: service_healthy
+  migrate:
+    image: migrate/migrate
+    volumes:
+      - ./cmd/migrate/migrations:/migrations
+    networks:
+      - backend
+    entrypoint: sh -c
+    command: >
+      "sleep 10 &&
+      migrate -path=/migrations/
+      -database 'mysql://${DB_USER}:${DB_PASSWORD}@tcp(mysql-db:3306)/${DB_NAME}?multiStatements=true'
+      up"
+    depends_on:
+      db:
+        condition: service_healthy
 
   redis:
     image: redis:6.2-alpine
