@@ -7,6 +7,19 @@ definitions:
     required:
     - long_url
     type: object
+  store.StatsSummary:
+    properties:
+      clicks_24h:
+        type: integer
+      device_stats:
+        additionalProperties:
+          type: integer
+        type: object
+      top_referrer:
+        type: string
+      total_clicks:
+        type: integer
+    type: object
   store.URL:
     properties:
       created_at:
@@ -58,6 +71,33 @@ paths:
           description: Internal server error
           schema: {}
       summary: Redirect to long URL
+      tags:
+      - urls
+  /urls/{shortURL}/stats:
+    get:
+      consumes:
+      - application/json
+      description: Get analytics and click statistics for a specific short URL
+      parameters:
+      - description: Short URL
+        in: path
+        name: shortURL
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/store.StatsSummary'
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      summary: Get URL analytics
       tags:
       - urls
   /urls/shorten:

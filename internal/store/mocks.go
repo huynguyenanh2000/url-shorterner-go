@@ -8,7 +8,8 @@ import (
 
 func NewMockStore() Storage {
 	return Storage{
-		URL: &MockURLStore{},
+		URL:          &MockURLStore{},
+		URLAnalytics: &MockAnalyticsStore{},
 	}
 }
 
@@ -35,4 +36,21 @@ func (s *MockURLStore) GetByShortURL(ctx context.Context, shortURL string) (*URL
 		return nil, args.Error(1)
 	}
 	return args.Get(0).(*URL), args.Error(1)
+}
+
+type MockAnalyticsStore struct {
+	mock.Mock
+}
+
+func (s *MockAnalyticsStore) Create(ctx context.Context, analytics *URLAnalytics) error {
+	args := s.Called(ctx, analytics)
+	return args.Error(0)
+}
+
+func (s *MockAnalyticsStore) GetStatsByURLID(ctx context.Context, urlID uint64) (*StatsSummary, error) {
+	args := s.Called(ctx, urlID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*StatsSummary), args.Error(1)
 }

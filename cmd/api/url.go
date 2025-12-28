@@ -131,6 +131,26 @@ func (app *application) urlShortenHandler(w http.ResponseWriter, r *http.Request
 func (app *application) urlRedirectHandler(w http.ResponseWriter, r *http.Request) {
 	url := getURLFromCtx(r)
 
+	// 1. Capture Analytics Data
+	// Get real IP (considering potential Proxy/Load Balancer)
+	ipAddress := r.Header.Get("X-Forwarded-For")
+	if ipAddress == "" {
+		ipAddress = r.RemoteAddr
+	}
+
+	analytics := &store.URLAnalytics{
+		URLID:     url.ID,
+		IPAddress: ipAddress,
+		UserAgent: r.UserAgent(),
+		Referrer:  r.Referer(),
+	}
+
+	// 2. Save to Database (Synchronous)
+	if err := app.store.URLAnalytics.Create(r.Context(), analytics); err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
 	http.Redirect(w, r, url.LongURL, http.StatusPermanentRedirect)
 }
 

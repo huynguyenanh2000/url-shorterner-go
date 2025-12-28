@@ -114,6 +114,46 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/urls/{shortURL}/stats": {
+            "get": {
+                "description": "Get analytics and click statistics for a specific short URL",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "urls"
+                ],
+                "summary": "Get URL analytics",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Short URL",
+                        "name": "shortURL",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/store.StatsSummary"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {}
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {}
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -125,6 +165,26 @@ const docTemplate = `{
             "properties": {
                 "long_url": {
                     "type": "string"
+                }
+            }
+        },
+        "store.StatsSummary": {
+            "type": "object",
+            "properties": {
+                "clicks_24h": {
+                    "type": "integer"
+                },
+                "device_stats": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    }
+                },
+                "top_referrer": {
+                    "type": "string"
+                },
+                "total_clicks": {
+                    "type": "integer"
                 }
             }
         },

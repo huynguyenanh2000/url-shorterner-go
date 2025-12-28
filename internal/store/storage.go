@@ -18,10 +18,15 @@ type Storage struct {
 		GetByLongURL(context.Context, string) (*URL, error)
 		GetByShortURL(context.Context, string) (*URL, error)
 	}
+	URLAnalytics interface {
+		Create(context.Context, *URLAnalytics) error
+		GetStatsByURLID(context.Context, uint64) (*StatsSummary, error)
+	}
 }
 
 func NewStorage(db *sql.DB) Storage {
 	return Storage{
-		URL: &URLStore{db},
+		URL:          &URLStore{db},
+		URLAnalytics: &AnalyticsStore{db},
 	}
 }

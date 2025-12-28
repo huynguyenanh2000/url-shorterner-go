@@ -20,6 +20,10 @@ func resetMocks(app *application) {
 		mockCache.ExpectedCalls = nil
 		mockCache.Calls = nil
 	}
+	if mockAnalytics, ok := app.store.URLAnalytics.(*store.MockAnalyticsStore); ok {
+		mockAnalytics.ExpectedCalls = nil
+		mockAnalytics.Calls = nil
+	}
 }
 
 func TestShorternURL(t *testing.T) {
@@ -136,18 +140,26 @@ func TestURLRedirect(t *testing.T) {
 	shortCode := "abcxyz"
 	longURL := "https://google.com"
 	testURL := &store.URL{
+		ID:       1,
 		ShortURL: shortCode,
 		LongURL:  longURL,
 	}
 
-	t.Run("should redirect (308) when URL exists in cache", func(t *testing.T) {
+	t.Run("should redirect (308) and track analytics when URL exists in cache", func(t *testing.T) {
 		resetMocks(app)
 		mockCacheStore := app.cacheStorage.URL.(*cache.MockURLStore)
+		mockAnalyticsStore := app.store.URLAnalytics.(*store.MockAnalyticsStore)
 
 		// Setup: Cache Hit
 		mockCacheStore.On("GetByShortURL", mock.Anything, shortCode).Return(testURL, nil).Once()
 
+		// Setup: Expect Analytics Creation
+		mockAnalyticsStore.On("Create", mock.Anything, mock.MatchedBy(func(a *store.URLAnalytics) bool {
+			return a.URLID == testURL.ID
+		})).Return(nil).Once()
+
 		req, _ := http.NewRequest(http.MethodGet, "/v1/urls/"+shortCode, nil)
+		req.Header.Set("User-Agent", "TestAgent")
 		rr := executeRequest(req, mux)
 
 		checkResponseCode(t, http.StatusPermanentRedirect, rr.Code)
@@ -157,17 +169,22 @@ func TestURLRedirect(t *testing.T) {
 		}
 
 		mockCacheStore.AssertExpectations(t)
+		mockAnalyticsStore.AssertExpectations(t)
 	})
 
-	t.Run("should redirect (308) when cache miss but exists in DB", func(t *testing.T) {
+	t.Run("should redirect (308) and track analytics when cache miss but exists in DB", func(t *testing.T) {
 		resetMocks(app)
 		mockStore := app.store.URL.(*store.MockURLStore)
 		mockCacheStore := app.cacheStorage.URL.(*cache.MockURLStore)
+		mockAnalyticsStore := app.store.URLAnalytics.(*store.MockAnalyticsStore)
 
 		// Setup: Cache Miss -> DB Hit -> Set Cache
 		mockCacheStore.On("GetByShortURL", mock.Anything, shortCode).Return(nil, nil).Once()
 		mockStore.On("GetByShortURL", mock.Anything, shortCode).Return(testURL, nil).Once()
 		mockCacheStore.On("Set", mock.Anything, testURL).Return(nil).Once()
+
+		// Setup: Expect Analytics Creation
+		mockAnalyticsStore.On("Create", mock.Anything, mock.Anything).Return(nil).Once()
 
 		req, _ := http.NewRequest(http.MethodGet, "/v1/urls/"+shortCode, nil)
 		rr := executeRequest(req, mux)
@@ -179,12 +196,14 @@ func TestURLRedirect(t *testing.T) {
 
 		mockCacheStore.AssertExpectations(t)
 		mockStore.AssertExpectations(t)
+		mockAnalyticsStore.AssertExpectations(t)
 	})
 
 	t.Run("should return 404 if URL does not exist anywhere", func(t *testing.T) {
 		resetMocks(app)
 		mockStore := app.store.URL.(*store.MockURLStore)
 		mockCacheStore := app.cacheStorage.URL.(*cache.MockURLStore)
+		mockAnalyticsStore := app.store.URLAnalytics.(*store.MockAnalyticsStore)
 
 		// Setup: Cache Miss -> DB Miss (ErrNotFound)
 		mockCacheStore.On("GetByShortURL", mock.Anything, "nonexistent").Return(nil, nil).Once()
@@ -194,6 +213,8 @@ func TestURLRedirect(t *testing.T) {
 		rr := executeRequest(req, mux)
 
 		checkResponseCode(t, http.StatusNotFound, rr.Code)
+
+		mockAnalyticsStore.AssertNotCalled(t, "Create", mock.Anything, mock.Anything)
 
 		mockStore.AssertExpectations(t)
 		mockCacheStore.AssertExpectations(t)
